@@ -1,3 +1,4 @@
+/* 字体与全局基础：页面依赖本地 Roboto 字体，避免网络字体导致首屏布局跳动。 */
 @font-face { font-family: GoudaRoboto; src: url('/fonts/Roboto-Light.woff') format('woff'); font-weight: 300; font-display: swap; }
 @font-face { font-family: GoudaRoboto; src: url('/fonts/Roboto-Regular.woff') format('woff'); font-weight: 400; font-display: swap; }
 @font-face { font-family: GoudaRoboto; src: url('/fonts/Roboto-Bold.woff') format('woff'); font-weight: 700; font-display: swap; }
@@ -10,6 +11,7 @@ button, a { font: inherit; }
 button { border: 0; cursor: pointer; }
 button:focus-visible, a:focus-visible { outline: 2px solid #ddbd80; outline-offset: 4px; }
 .app-shell { width: 100%; height: 100%; background: #1d1c1b; }
+/* 侧栏在桌面端固定于左侧；移动端 media query 会将其改为顶部横向导航。 */
 .nav-head { position: fixed; inset: 0 auto 0 0; z-index: 20; width: 240px; padding: 32px 24px 24px; display: flex; flex-direction: column; background: #111; }
 .brand-button { padding: 0; background: transparent; text-align: left; }
 .nav-logo { display: block; width: 100%; height: auto; }
@@ -21,6 +23,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid #ddbd80; outline-offs
 .nav-caption { margin: auto 0 0; color: rgba(255,255,255,.3); font-size: 10px; letter-spacing: .24em; }
 .section-viewport { position: relative; width: 100%; height: 100%; overflow: hidden; }
 .page-section { position: absolute; inset: 0 0 0 240px; width: calc(100% - 240px); min-height: 100%; overflow: hidden; }
+/* 页面内容按模块分组；每个 page-section 都绝对定位，由 App.vue 的 GSAP 时间线切换。 */
 .eyebrow { margin: 0 0 22px; color: #b08a4d; font-size: 11px; letter-spacing: .28em; }
 h1, h2, p { margin: 0; }
 h1, h2 { font-weight: 900; letter-spacing: -.04em; }
@@ -35,6 +38,7 @@ em { color: #ddbd80; font-style: normal; }
 .gold-button { padding: 16px 24px; color: #fff; background: #b08a4d; font-size: 12px; letter-spacing: .16em; transition: background .25s, transform .25s; }
 .gold-button:hover { background: #ddbd80; transform: translateY(-3px); }
 .gold-button span { margin-left: 22px; font-size: 17px; }
+/* Profile 使用左右两列，底部联系方式与 logo 脱离文档流固定在视觉基线。 */
 .profile-section { padding: 10vh 7vw; background: #1d1c1b; }
 .profile-grid { height: 62%; display: grid; grid-template-columns: 1fr 1px 1fr; align-items: center; gap: 5vw; }
 .profile-copy { max-width: 540px; }
@@ -57,6 +61,7 @@ em { color: #ddbd80; font-style: normal; }
 .gallery-arrow--next { right: 3vw; }
 .gallery-title { position: absolute; bottom: 6vh; left: 50%; color: #b08a4d; background: transparent; font-size: clamp(15px, 2vw, 28px); font-weight: 700; transform: translateX(-50%); white-space: nowrap; }
 .gallery-title span { margin-left: 18px; }
+/* Schedule 用五行背景图铺满视口，遮罩层负责保证标签文字对比度。 */
 .schedule-section { padding: 6vh 5vw; background: #111; }
 .schedule-heading { position: absolute; z-index: 2; top: 7vh; left: 7vw; }
 .schedule-list { display: grid; grid-template-rows: repeat(5, 1fr); width: 100%; height: 100%; }
@@ -64,6 +69,7 @@ em { color: #ddbd80; font-style: normal; }
 .schedule-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.62); transition: background .3s; }
 .schedule-item:hover .schedule-overlay { background: rgba(0,0,0,.2); }
 .schedule-item span { position: absolute; right: 5vw; bottom: 18px; color: rgba(255,255,255,.72); font-size: 12px; letter-spacing: .24em; }
+/* 详情页是独立的 fixed 层：工具栏固定，图片内容在 detail-scroller 内滚动。 */
 .detail-overlay { position: fixed; inset: 0; z-index: 50; background: #151412; }
 .detail-toolbar { position: fixed; top: 0; right: 0; left: 240px; z-index: 2; display: flex; justify-content: space-between; padding: 28px 5vw; background: linear-gradient(#151412, transparent); }
 .close-button { color: #ddbd80; background: transparent; letter-spacing: .16em; }
@@ -80,6 +86,7 @@ em { color: #ddbd80; font-style: normal; }
 .detail-fade-enter-active, .detail-fade-leave-active { transition: opacity .35s; }
 .detail-fade-enter-from, .detail-fade-leave-to { opacity: 0; }
 @media (max-width: 800px) {
+  /* 移动端将侧栏、间距和画廊卡片比例调整为单列触控布局。 */
   .nav-head { inset: 0 0 auto; width: 100%; height: 72px; padding: 14px 18px; flex-direction: row; align-items: center; }
   .brand-button { width: 112px; }
   .nav-list { position: static; flex: 1; transform: none; display: flex; justify-content: flex-end; gap: 2px; }
@@ -112,5 +119,6 @@ em { color: #ddbd80; font-style: normal; }
   .detail-image { margin-bottom: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* 尊重系统的减少动态偏好，同时保留页面可用性和状态切换。 */
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
