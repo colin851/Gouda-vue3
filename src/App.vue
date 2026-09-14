@@ -18,12 +18,16 @@ const activeProductIndex = ref(0)
 // sectionRefs 与 currentSection 使用同一套索引，便于动画时同时找到进场和退场节点。
 const sectionRefs = []
 const detailScroller = ref(null)
+const detailOverlay = ref(null)
+const closeButton = ref(null)
 const touchStart = ref(null)
 const isTransitioning = ref(false)
 let wheelLockTimer
+let lastFocusedElement
 
 // 详情弹层中的“下一个/上一个”直接复用画廊当前作品索引。
 const activeProduct = computed(() => products[activeProductIndex.value])
+const selectedProductIndex = computed(() => products.findIndex(({ id }) => id === selectedProduct.value?.id))
 
 // Vue 的函数式 ref 会在节点创建/销毁时多次触发，因此只在有节点时写入数组。
 function setSectionRef(element, index) { if (element) sectionRefs[index] = element }
@@ -71,30 +75,37 @@ function onTouchEnd(event) {
 
 // 打开详情后等待 DOM 更新，再把滚动位置重置到作品图片集的顶部。
 function openProduct(product) {
+  const productIndex = products.findIndex(({ id }) => id === product.id)
+  if (productIndex >= 0) activeProductIndex.value = productIndex
+  lastFocusedElement = document.activeElement
   selectedProduct.value = product
-  nextTick(() => detailScroller.value?.scrollTo({ top: 0 }))
+  nextTick(() => {
+    detailScroller.value?.scrollTo({ top: 0 })
+    closeButton.value?.focus()
+  })
 }
-function closeProduct() { selectedProduct.value = null }
+function closeProduct() {
+  selectedProduct.value = null
+  nextTick(() => lastFocusedElement?.focus())
+}
 
 // 使用取模实现首尾循环，这样详情页和画廊都能从任意作品继续浏览。
 function nextProduct(direction) { activeProductIndex.value = (activeProductIndex.value + direction + products.length) % products.length }
 
 // 根据作品与当前卡片的距离计算层叠卡片的 CSS 变量和视觉强调程度。
-function cardStyle(index) {
-  const offset = index - activeProductIndex.value
-  const distance = Math.min(Math.abs(offset), 2)
-  return {
-    '--card-index': offset,
-    '--card-scale': 1 - distance * 0.16,
-    opacity: Math.max(0.16, 1 - distance * 0.42),
-    zIndex: 10 - distance,
-  }
-}
-
 // 弹层打开时仅保留 Escape 关闭；弹层关闭后，方向键/PageUp/PageDown 可切换整页。
 function onKeydown(event) {
   if (event.key === 'Escape' && selectedProduct.value) closeProduct()
-  if (selectedProduct.value) return
+  if (selectedProduct.value) {
+    if (event.key !== 'Tab') return
+    const focusable = [...(detailOverlay.value?.querySelectorAll('button, a[href]') ?? [])]
+    if (!focusable.length) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    return
+  }
   if (event.key === 'ArrowDown' || event.key === 'PageDown') goToSection(currentSection.value + 1, 1)
   if (event.key === 'ArrowUp' || event.key === 'PageUp') goToSection(currentSection.value - 1, -1)
 }
@@ -117,53 +128,63 @@ onBeforeUnmount(() => {
   <div class="app-shell" @wheel="onWheel" @touchstart="onTouchStart" @touchend="onTouchEnd">
     <!-- 固定侧栏：桌面端占据左侧 240px，移动端由 CSS 收缩为顶部导航。 -->
     <aside class="nav-head" aria-label="主导航">
-      <button class="brand-button" aria-label="返回首页" @click="goToSection(0, -1)"><img class="nav-logo" src="/img/logo-min.png" alt="GoudaText" /></button>
+      <button class="brand-button" :class="{ active: currentSection === 0 }" aria-label="返回首页" @click="goToSection(0, -1)"><img class="nav-logo" src="/img/logo-min.png" alt="GoudaText" /></button>
       <nav class="nav-list">
         <button v-for="(label, index) in sectionNames" :key="label" class="nav-item" :class="{ active: currentSection === index + 1 }" @click="goToSection(index + 1)">
           <span class="nav-index">0{{ index + 1 }}</span><span>{{ label }}</span>
         </button>
       </nav>
-      <p class="nav-caption">GUNPLA / STUDIO</p>
+      <p class="nav-caption">Gunpla studio<br />Est. 2014</p>
     </aside>
 
     <!-- 所有全屏页面都叠放在同一个 viewport 中，由 GSAP 控制 yPercent 和透明度。 -->
     <main class="section-viewport" aria-live="polite">
       <!-- 首页只负责品牌展示和进入首个作品详情。 -->
       <section :ref="(element) => setSectionRef(element, 0)" class="page-section hero-section">
-        <div class="hero-copy"><p class="eyebrow">MASTER LEVEL GUNPLA</p><h1>GUNDAM</h1><p class="hero-subtitle"><span>BANSHEE</span> NORN</p><button class="gold-button" @click="openProduct(products[0])">VIEW MORE <span>↗</span></button></div>
-        <img class="hero-image" src="/img/bg1.png" alt="Banshee Norn Gundam" /><div class="hero-grid" aria-hidden="true"></div>
+        <div class="hero-wordmark" aria-label="GoudaText"><span>GOUDA</span><span>TEXT</span></div>
+        <img class="hero-image" src="/img/bg1.png" alt="Banshee Norn Gundam" />
+        <div class="hero-copy"><h1>BANSHEE<br />NORN</h1><p>1 / 60 PG</p><button class="primary-action" @click="openProduct(products[0])">View project</button></div>
+        <p class="hero-counter">Selected work <strong>01</strong> / 06</p>
       </section>
 
       <!-- Profile 页面展示工作室定位与联系方式。 -->
       <section :ref="(element) => setSectionRef(element, 1)" class="page-section profile-section">
         <div class="profile-grid">
-          <div class="profile-copy reveal-item"><p class="eyebrow">01 / PROFILE</p><h2>GUNPLA<br /><em>END PRODUCT</em></h2><p>To offer the highest level of GUNPLA products, we share our views of GUNPLA with every client and obsess over every detail.</p></div>
+          <div class="profile-copy reveal-item"><h2>GUNPLA<br /><em>END PRODUCT</em></h2><p class="section-meta">Profile / 01</p><p>To offer the highest level of GUNPLA products, we share our views of GUNPLA with every client and obsess over every detail.</p></div>
           <div class="profile-divider" aria-hidden="true"></div>
-          <div class="profile-copy reveal-item"><p class="eyebrow">02 / DEVELOPMENT</p><h2>GARAGE KIT<br /><em>DEVELOPMENT</em></h2><p>Professional research and technical skills help us develop garage kits with rich details and a distinctive point of view.</p></div>
+          <div class="profile-copy reveal-item"><h2>GARAGE KIT<br /><em>DEVELOPMENT</em></h2><p class="section-meta">Development / 02</p><p>Professional research and technical skills help us develop garage kits with rich details and a distinctive point of view.</p></div>
         </div>
-        <div class="contact-block reveal-item"><span class="contact-icon">✉</span><a href="mailto:shen@maniac-studio.com">shen@maniac-studio.com</a></div><img class="profile-logo" src="/img/logo-lg.png" alt="GoudaText Studio" />
+        <div class="contact-block reveal-item"><span>Contact</span><a href="mailto:shen@maniac-studio.com">shen@maniac-studio.com</a></div><img class="profile-logo" src="/img/logo-lg.png" alt="GoudaText Studio" />
       </section>
 
-      <!-- Gallery 页面只维护当前索引；卡片位置、缩放和透明度由 cardStyle 派生。 -->
+      <!-- Gallery 页面只维护当前索引，当前作品和右侧目录都直接消费 products 数据。 -->
       <section :ref="(element) => setSectionRef(element, 2)" class="page-section gallery-section">
-        <div class="section-heading"><p class="eyebrow">03 / GALLERY</p><h2>SELECTED <em>WORKS</em></h2></div>
-        <div class="gallery-stage"><button class="gallery-arrow gallery-arrow--prev" aria-label="上一个作品" @click="nextProduct(-1)">←</button><button class="gallery-arrow gallery-arrow--next" aria-label="下一个作品" @click="nextProduct(1)">→</button>
-          <button v-for="(product, index) in products" :key="product.id" class="product-card" :class="{ 'is-active': index === activeProductIndex }" :style="cardStyle(index)" @click="index === activeProductIndex ? openProduct(product) : (activeProductIndex = index)"><img :src="product.cover" :alt="product.name" loading="lazy" @error="$event.target.src = '/img/defualt.jpg'" /><span class="product-mask"></span></button>
+        <div class="section-heading"><h2>SELECTED<br /><em>WORKS</em></h2><p class="section-meta">Gallery / 03</p></div>
+        <div class="gallery-stage">
+          <button class="gallery-visual" :aria-label="`查看 ${activeProduct.name}`" @click="openProduct(activeProduct)">
+            <img :src="activeProduct.cover" :alt="activeProduct.name" @error="$event.target.src = '/img/defualt.jpg'" />
+            <span class="gallery-open">Open project</span>
+          </button>
+          <div class="gallery-index" aria-label="作品索引">
+            <button v-for="(product, index) in products" :key="product.id" :class="{ active: index === activeProductIndex }" @click="activeProductIndex = index">
+              <span>{{ String(index + 1).padStart(2, '0') }}</span><strong>{{ product.shortName }}</strong>
+            </button>
+          </div>
         </div>
-        <button class="gallery-title" @click="openProduct(activeProduct)">{{ activeProduct.name }} <span>↗</span></button>
+        <div class="gallery-footer"><p>{{ activeProduct.name }}</p><div><button aria-label="上一个作品" @click="nextProduct(-1)">Previous</button><button aria-label="下一个作品" @click="nextProduct(1)">Next</button></div></div>
       </section>
 
       <!-- Schedule 页面使用独立数据源展示进行中的项目列表。 -->
       <section :ref="(element) => setSectionRef(element, 3)" class="page-section schedule-section">
-        <div class="section-heading schedule-heading"><p class="eyebrow">04 / SCHEDULE</p><h2>IN <em>PROGRESS</em></h2></div>
+        <div class="section-heading schedule-heading"><h2>IN<br /><em>PROGRESS</em></h2><p class="section-meta">Schedule / 04</p></div>
         <div class="schedule-list"><article v-for="item in scheduleItems" :key="item.id" class="schedule-item" :style="{ backgroundImage: `url(${item.image})` }"><div class="schedule-overlay"></div><span>{{ item.label }}</span></article></div>
       </section>
     </main>
 
     <!-- 详情弹层覆盖整个应用，但内部 scroller 独立滚动，避免影响背景页面。 -->
-    <Transition name="detail-fade"><div v-if="selectedProduct" class="detail-overlay" role="dialog" aria-modal="true" :aria-label="selectedProduct.name">
-      <div class="detail-toolbar"><button class="close-button" aria-label="关闭详情" @click="closeProduct">× <span>CLOSE</span></button><span class="detail-count">{{ products.indexOf(selectedProduct) + 1 }} / {{ products.length }}</span></div>
-      <div ref="detailScroller" class="detail-scroller"><header class="detail-header"><p class="eyebrow">SELECTED WORK</p><h2>{{ selectedProduct.shortName }}</h2><p>{{ selectedProduct.name }}</p></header><div class="detail-gallery"><img v-for="(image, index) in selectedProduct.images" :key="image" class="detail-image" :src="image" :alt="`${selectedProduct.name} ${index + 1}`" loading="lazy" decoding="async" @error="$event.target.src = '/img/defualt.jpg'" /></div><div class="detail-navigation"><button @click="nextProduct(-1); selectedProduct = activeProduct">← PREV</button><button @click="nextProduct(1); selectedProduct = activeProduct">NEXT →</button></div></div>
+    <Transition name="detail-fade"><div v-if="selectedProduct" ref="detailOverlay" class="detail-overlay" role="dialog" aria-modal="true" :aria-label="selectedProduct.name">
+      <div class="detail-toolbar"><button ref="closeButton" class="close-button" aria-label="关闭详情" @click="closeProduct">Close</button><span class="detail-count">{{ String(selectedProductIndex + 1).padStart(2, '0') }} / {{ String(products.length).padStart(2, '0') }}</span></div>
+      <div ref="detailScroller" class="detail-scroller"><header class="detail-header"><h2>{{ selectedProduct.shortName }}</h2><p class="section-meta">Selected work</p><p>{{ selectedProduct.name }}</p></header><div class="detail-gallery"><img v-for="(image, index) in selectedProduct.images" :key="image" class="detail-image" :src="image" :alt="`${selectedProduct.name} ${index + 1}`" loading="lazy" decoding="async" @error="$event.target.src = '/img/defualt.jpg'" /></div><div class="detail-navigation"><button @click="nextProduct(-1); selectedProduct = activeProduct">Previous project</button><button @click="nextProduct(1); selectedProduct = activeProduct">Next project</button></div></div>
     </div></Transition>
   </div>
 </template>
