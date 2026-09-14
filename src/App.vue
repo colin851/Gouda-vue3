@@ -61,17 +61,35 @@ function onWheel(event) {
   goToSection(currentSection.value + direction, direction)
 }
 
-// 只记录单指触摸的起点；多指操作交给浏览器处理，避免误触发页面切换。
-function onTouchStart(event) { if (event.touches.length === 1) touchStart.value = event.touches[0].clientY }
+// 对可滚动页面，只有手势开始时已经位于对应边界，才允许继续滑动切换整页。
+// 边界状态在 touchstart 时记录，避免“本次刚滚到底”就被同一次手势直接带到下一页。
+function onTouchStart(event) {
+  if (event.touches.length !== 1 || selectedProduct.value) {
+    touchStart.value = null
+    return
+  }
+
+  const section = sectionRefs[currentSection.value]
+  const maxScrollTop = Math.max(0, (section?.scrollHeight ?? 0) - (section?.clientHeight ?? 0))
+  const scrollTop = section?.scrollTop ?? 0
+  touchStart.value = {
+    clientY: event.touches[0].clientY,
+    canGoUp: scrollTop <= 1,
+    canGoDown: maxScrollTop <= 1 || scrollTop >= maxScrollTop - 1,
+  }
+}
 function onTouchEnd(event) {
   if (touchStart.value === null || selectedProduct.value) return
-  const delta = touchStart.value - event.changedTouches[0].clientY
+  const start = touchStart.value
   touchStart.value = null
+  const delta = start.clientY - event.changedTouches[0].clientY
   // 低于阈值的移动视为点击或轻微拖动，不进行整页切换。
   if (Math.abs(delta) < 45) return
   const direction = delta > 0 ? 1 : -1
+  if ((direction > 0 && !start.canGoDown) || (direction < 0 && !start.canGoUp)) return
   goToSection(currentSection.value + direction, direction)
 }
+function onTouchCancel() { touchStart.value = null }
 
 // 打开详情后等待 DOM 更新，再把滚动位置重置到作品图片集的顶部。
 function openProduct(product) {
@@ -125,7 +143,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="app-shell" @wheel="onWheel" @touchstart="onTouchStart" @touchend="onTouchEnd">
+  <div class="app-shell" @wheel="onWheel" @touchstart="onTouchStart" @touchend="onTouchEnd" @touchcancel="onTouchCancel">
     <!-- 固定侧栏：桌面端占据左侧 240px，移动端由 CSS 收缩为顶部导航。 -->
     <aside class="nav-head" aria-label="主导航">
       <button class="brand-button" :class="{ active: currentSection === 0 }" aria-label="返回首页" @click="goToSection(0, -1)"><img class="nav-logo" src="/img/logo-min.png" alt="GoudaText" /></button>
