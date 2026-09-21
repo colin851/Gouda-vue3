@@ -1,8 +1,10 @@
+/* 字体资源：Light/Regular/Bold/Black 对应正文、标签和展示标题四个层级。 */
 @font-face { font-family: GoudaRoboto; src: url('/fonts/Roboto-Light.woff') format('woff'); font-weight: 300; font-display: swap; }
 @font-face { font-family: GoudaRoboto; src: url('/fonts/Roboto-Regular.woff') format('woff'); font-weight: 400; font-display: swap; }
 @font-face { font-family: GoudaRoboto; src: url('/fonts/Roboto-Bold.woff') format('woff'); font-weight: 700; font-display: swap; }
 @font-face { font-family: GoudaRoboto; src: url('/fonts/Roboto-Black.woff') format('woff'); font-weight: 900; font-display: swap; }
 
+/* 全局设计令牌与基础重置；--rail 同时决定侧栏宽度和所有页面的左侧起点。 */
 :root { color-scheme: dark; font-family: GoudaRoboto, "Microsoft YaHei", sans-serif; color: #f2f0e8; background: #090b0c; --black: #090b0c; --steel: #1b2023; --bone: #f2f0e8; --yellow: #f4c430; --red: #e6462d; --rail: 116px; }
 * { box-sizing: border-box; }
 html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
@@ -15,6 +17,7 @@ h1, h2, p { margin: 0; }
 h1, h2 { font-weight: 900; letter-spacing: -.035em; }
 em { color: var(--yellow); font-style: normal; }
 
+/* 应用框架：导航固定在最上层，页面视口占满剩余空间。 */
 .app-shell { width: 100%; height: 100%; background: var(--black); }
 .nav-head { position: fixed; inset: 0 auto 0 0; z-index: 20; width: var(--rail); display: flex; flex-direction: column; background: var(--black); border-right: 1px solid rgba(242, 240, 232, .18); }
 .brand-button { width: 100%; height: var(--rail); padding: 29px 18px; background: var(--black); border-bottom: 1px solid rgba(242, 240, 232, .18); }
@@ -28,15 +31,18 @@ em { color: var(--yellow); font-style: normal; }
 .nav-item.active::after { height: 100%; }
 .nav-index { color: var(--yellow); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .nav-caption { padding: 18px 12px; color: rgba(242, 240, 232, .42); font-size: 9px; line-height: 1.5; text-align: center; }
+/* 所有 page-section 叠放在该视口内，实际显隐和位移由 GSAP 写入行内样式。 */
 .section-viewport { position: relative; width: 100%; height: 100%; overflow: hidden; }
 .page-section { position: absolute; inset: 0 0 0 var(--rail); width: calc(100% - var(--rail)); min-height: 100%; overflow: hidden; }
 .section-meta { color: inherit; font-size: 11px; font-weight: 700; }
 
+/* 首屏：全屏媒体位于底层，品牌字样、标题、按钮与计数器位于 HTML 前景层。 */
 .hero-section { display: flex; align-items: flex-end; padding: 0 5.5vw 5.5vh; isolation: isolate; background: var(--black); }
 .hero-section::before { position: absolute; inset: 24px; z-index: -1; content: ''; border: 1px solid rgba(242, 240, 232, .18); }
-.hero-wordmark { position: absolute; inset: 5vh 2vw auto; z-index: -1; display: flex; justify-content: space-between; color: var(--bone); font-size: min(14vw, 210px); font-weight: 900; line-height: .78; letter-spacing: -.035em; white-space: nowrap; }
+.hero-wordmark { position: absolute; inset: 5vh 2vw auto; z-index: 2; display: flex; justify-content: space-between; color: var(--bone); font-size: min(14vw, 210px); font-weight: 900; line-height: .78; letter-spacing: -.035em; white-space: nowrap; }
 .hero-media { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
 .hero-image { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+/* Canvas 在纹理加载完成前透明，让下层静态图承担加载与 WebGL 失败兜底。 */
 .hero-canvas { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .55s ease; }
 .hero-canvas.ready { opacity: 1; }
 .hero-copy { position: relative; z-index: 2; display: grid; grid-template-columns: auto auto; align-items: end; gap: 18px 34px; }
@@ -47,6 +53,7 @@ em { color: var(--yellow); font-style: normal; }
 .hero-counter { position: absolute; right: 4vw; bottom: 5vh; z-index: 2; color: rgba(242, 240, 232, .65); font-size: 11px; }
 .hero-counter strong { margin-left: 12px; color: var(--yellow); font-size: 22px; font-variant-numeric: tabular-nums; }
 
+/* Profile：桌面端用明暗对照的双栏表达两类业务。 */
 .profile-section { padding: 0; color: var(--black); background: var(--bone); }
 .profile-grid { height: 78%; display: grid; grid-template-columns: 1fr 1px 1fr; }
 .profile-copy { position: relative; padding: 10vh 6vw 5vh; display: flex; flex-direction: column; justify-content: center; }
@@ -63,11 +70,13 @@ em { color: var(--yellow); font-style: normal; }
 .contact-block a { color: var(--black); text-decoration: underline; text-underline-offset: 5px; }
 .profile-logo { position: absolute; right: 5vw; bottom: 4.5vh; width: min(360px, 30vw); filter: brightness(0) invert(1); opacity: .82; }
 
+/* Gallery：左侧标题、中央封面、右侧目录形成三栏工作区。 */
 .gallery-section { padding: 5vh 4vw; color: var(--black); background: var(--bone); }
 .section-heading { position: absolute; z-index: 3; }
 .section-heading h2 { font-size: min(5.8vw, 82px); line-height: .82; }
 .section-heading .section-meta { margin-top: 18px; color: var(--red); }
 .gallery-stage { height: 100%; display: grid; grid-template-columns: minmax(185px, .7fr) minmax(320px, 2fr) minmax(220px, .9fr); align-items: center; gap: 3vw; }
+/* 四个 CSS 变量由 GallerySection 根据指针位置更新，默认值保证无 JS 时仍是平面卡片。 */
 .gallery-visual { --tilt-x: 0deg; --tilt-y: 0deg; --shift-x: 0px; --shift-y: 0px; position: relative; grid-column: 2; width: min(38vw, 540px); aspect-ratio: 627 / 769; justify-self: center; padding: 0; overflow: hidden; background: var(--steel); box-shadow: 20px 24px 50px rgba(9, 11, 12, .22); transform: perspective(1100px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)); transform-style: preserve-3d; transition: transform .18s ease-out, box-shadow .18s ease-out; }
 .gallery-visual:hover { box-shadow: 26px 32px 58px rgba(9, 11, 12, .28); }
 .gallery-visual::after { position: absolute; inset: 14px; content: ''; border: 1px solid rgba(242, 240, 232, .62); pointer-events: none; }
@@ -88,6 +97,7 @@ em { color: var(--yellow); font-style: normal; }
 .gallery-footer button, .detail-navigation button { padding: 10px 14px; color: inherit; background: transparent; border: 1px solid currentColor; font-size: 11px; font-weight: 700; }
 .gallery-footer button:hover { color: var(--bone); background: var(--black); }
 
+/* Schedule：左侧黄色标题区固定占 34%，右侧五个项目平均分配高度。 */
 .schedule-section { display: grid; grid-template-columns: 34% 1fr; padding: 0; background: var(--black); }
 .schedule-heading { position: relative; top: auto; left: auto; padding: 9vh 5vw; display: flex; flex-direction: column; justify-content: flex-end; background: var(--yellow); }
 .schedule-heading h2 { color: var(--black); font-size: min(6vw, 86px); }
@@ -99,6 +109,7 @@ em { color: var(--yellow); font-style: normal; }
 .schedule-item:hover .schedule-overlay { background: rgba(9, 11, 12, .18); }
 .schedule-item span { position: absolute; right: 3vw; bottom: 18px; color: var(--bone); font-size: 12px; font-weight: 700; }
 
+/* 作品详情：覆盖应用的独立滚动层，工具栏固定，图片区使用响应式多列流。 */
 .detail-overlay { position: fixed; inset: 0; z-index: 50; color: var(--bone); background: var(--black); }
 .detail-toolbar { position: fixed; inset: 0 0 auto; z-index: 2; height: 72px; padding: 0 4vw; display: flex; justify-content: space-between; align-items: center; background: var(--yellow); }
 .close-button { padding: 10px 0; color: var(--black); background: transparent; font-size: 12px; font-weight: 700; }
@@ -116,12 +127,14 @@ em { color: var(--yellow); font-style: normal; }
 .detail-fade-enter-active, .detail-fade-leave-active { transition: opacity .3s ease; }
 .detail-fade-enter-from, .detail-fade-leave-to { opacity: 0; }
 
+/* 中等桌面：收紧三栏画廊和 Profile 的横向间距。 */
 @media (max-width: 1000px) {
   .gallery-stage { grid-template-columns: 170px minmax(300px, 1.6fr) minmax(180px, .8fr); gap: 2vw; }
   .gallery-index button { min-height: 50px; }
   .profile-copy { padding-right: 4vw; padding-left: 4vw; }
 }
 
+/* 移动端：侧栏改为顶部导航，各页面允许纵向滚动并切换为单栏阅读顺序。 */
 @media (max-width: 800px) {
   :root { --rail: 68px; }
   .nav-head { inset: 0 0 auto; width: 100%; height: var(--rail); flex-direction: row; border-right: 0; border-bottom: 1px solid rgba(242, 240, 232, .18); }
@@ -174,6 +187,7 @@ em { color: var(--yellow); font-style: normal; }
   .detail-image { margin-bottom: 10px; }
 }
 
+/* 窄手机：进一步压缩导航、首屏文案和画廊操作区域。 */
 @media (max-width: 420px) {
   .brand-button { width: 84px; padding: 20px 12px; }
   .nav-list { width: calc(100% - 84px); }
@@ -183,6 +197,7 @@ em { color: var(--yellow); font-style: normal; }
   .gallery-footer div { display: grid; }
 }
 
+/* 尊重系统减少动态设置：压缩过渡时长，并完全移除画廊的 3D 变换。 */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
   .gallery-visual, .gallery-image-plane { transform: none !important; }

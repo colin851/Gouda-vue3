@@ -1,5 +1,7 @@
 <template>
+  <!-- 工作室介绍页没有独立状态，只负责品牌能力、联系方式与标志展示。 -->
   <section class="page-section profile-section">
+    <!-- 桌面端左右对照两类业务，移动端改为纵向排列。 -->
     <div class="profile-grid">
       <div class="profile-copy reveal-item"><h2>GUNPLA<br /><em>END PRODUCT</em></h2><p class="section-meta">Profile / 01</p><p>To offer the highest level of GUNPLA products, we share our views of GUNPLA with every client and obsess over every detail.</p></div>
       <div class="profile-divider" aria-hidden="true"></div>

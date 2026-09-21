@@ -1,7 +1,7 @@
 // 统一拼接静态资源路径，避免每个作品重复书写 /img 前缀。
 const sequence = (folder, names) => names.map((name) => `/img/${folder}/${name}`)
 
-// 作品数据是画廊卡片、首页入口和详情弹层的唯一数据源。
+// 作品数据是画廊卡片、首页入口和详情弹层的唯一数据源，不在组件中创建同义字段。
 // 字段约定：id 用于稳定渲染 key；name 是完整标题；shortName 用于详情页大标题；
 // cover 是画廊封面，images 按展示顺序保存详情图片。
 export const products = [
